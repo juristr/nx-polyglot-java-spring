@@ -4,7 +4,14 @@
 
 ## Prerequisites and commands
 
-Use JDK 21 with `JAVA_HOME` pointing to its installation. The committed wrapper downloads Gradle 8.14.3 and verifies its distribution SHA-256. Maven Central and the Gradle distribution host must be reachable on the first build.
+Install [mise](https://mise.jdx.dev/) and run the following once from this repo:
+
+```sh
+mise trust
+mise install
+```
+
+`mise.toml` pins Temurin 21.0.10+7.0.LTS. [Mise's Java integration](https://mise.jdx.dev/lang/java.html) sets `JAVA_HOME` and selects Java on `PATH`. With mise activated in your shell, run the commands below directly. The committed wrapper downloads Gradle 8.14.3 and verifies its distribution SHA-256. Maven Central and the Gradle distribution host must be reachable on the first build.
 
 ```sh
 ./gradlew build
@@ -14,12 +21,14 @@ Use JDK 21 with `JAVA_HOME` pointing to its installation. The committed wrapper 
 
 Spring Boot is pinned to 3.5.16 and springdoc to 2.8.17. `gradle.lockfile` locks resolved application and generator dependencies. Update it intentionally with `./gradlew build --write-locks` when changing dependencies.
 
-On this machine, JDK 21 is installed through mise:
+For scripts or terminals without mise shell activation, use:
 
 ```sh
-export JAVA_HOME="$HOME/.local/share/mise/installs/java/temurin-21"
-./gradlew build
+mise exec -- ./gradlew build
+mise exec -- python3 scripts/verify.py
 ```
+
+On this machine, zsh already activates mise. Re-enter this directory or open a new terminal if an existing terminal still reports no Java runtime.
 
 `./gradlew bootRun` starts the sample HTTP application when you want to try the endpoints manually. Spec generation does not require it.
 
@@ -57,6 +66,8 @@ Validated on 2026-09-24 with macOS arm64, Temurin 21.0.10+7 and Gradle 8.14.3.
 | Clone: `./gradlew generateOpenApi --rerun-tasks --no-build-cache` | Byte-identical output. |
 | Clone: rename `Product.name` to `title`, `./gradlew generateOpenApi` | Generator executed; schema contains `title`, no `name`. |
 | Clone: original DTO plus comment, force uncached generation | Output matches original bytes. |
+
+After adding `mise.toml`, `env -u JAVA_HOME mise exec -- ./gradlew clean build --no-build-cache` also passed. This verifies setup without the manual `JAVA_HOME` override used for the original experiments.
 
 Baseline spec SHA-256: `1fc8e1e24802420f9cc48a2215b3d8ff021f35bceebfb218c65024488f59dfaf`.
 
