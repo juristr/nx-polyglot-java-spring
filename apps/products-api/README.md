@@ -43,6 +43,23 @@ python3 scripts/verify.py
 
 The script clones committed HEAD into a temporary directory. It builds without the build cache, checks the endpoints and schemas, expects an unchanged build to be `UP-TO-DATE`, deletes the spec and checks `FROM-CACHE` restoration, compares uncached output bytes, renames `Product.name` to `title`, then checks a comment-only edit against the original output. It never changes source files in this checkout.
 
+## Recorded results
+
+Validated on 2026-09-24 with macOS arm64, Temurin 21.0.10+7 and Gradle 8.14.3.
+
+| Command or experiment | Result |
+| --- | --- |
+| `./gradlew clean build --write-locks` | Passed; emitted all three paths and both schemas. |
+| `python3 scripts/verify.py` | Passed all experiments in a fresh local clone. |
+| Clone: `./gradlew build --no-build-cache` | Passed with real generation and no embedded web server context. |
+| Clone: `./gradlew build` | `generateOpenApi UP-TO-DATE`. |
+| Clone: force generation, delete JSON, `./gradlew generateOpenApi` | `generateOpenApi FROM-CACHE`; identical restored bytes. |
+| Clone: `./gradlew generateOpenApi --rerun-tasks --no-build-cache` | Byte-identical output. |
+| Clone: rename `Product.name` to `title`, `./gradlew generateOpenApi` | Generator executed; schema contains `title`, no `name`. |
+| Clone: original DTO plus comment, force uncached generation | Output matches original bytes. |
+
+Baseline spec SHA-256: `1fc8e1e24802420f9cc48a2215b3d8ff021f35bceebfb218c65024488f59dfaf`.
+
 ## Changes from the research template
 
 The MockMvc/source-set mechanism works as written. This standalone build adds the Boot dependency BOM, Java 21 toolchain, compiler parameter metadata, dependency locking and a checksummed wrapper. The OpenAPI bean fixes server URL and version. Assertions cover all endpoints, nested DTO references and the absence of an embedded server context.
