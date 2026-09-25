@@ -2,8 +2,39 @@
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
   "namedInputs": {
     "default": ["{projectRoot}/**/*", "sharedGlobals"],
-    "production": ["default"],
-    "sharedGlobals": []
+    "production": ["default", "!{projectRoot}/src/test/**/*"],
+    "sharedGlobals": [
+      "{workspaceRoot}/tsconfig.base.json",
+      "{workspaceRoot}/mise.toml"
+    ]
+  },
+  "targetDefaults": {
+    "typecheck": {
+      "dependsOn": ["...", "codegen"],
+      "inputs": [
+        "...",
+        {
+          "dependentTasksOutputFiles": "**/*.ts",
+          "transitive": true
+        }
+      ]
+    },
+    "build": {
+      "dependsOn": ["...", "^codegen"]
+    },
+    "dev": {
+      "dependsOn": ["...", "^codegen"]
+    },
+    "bootJar": {
+      "options": {
+        "excludeDependsOn": false
+      }
+    },
+    "bootRun": {
+      "options": {
+        "excludeDependsOn": false
+      }
+    }
   },
   "plugins": [
     {
@@ -19,7 +50,18 @@
           "watchDepsName": "watch-deps"
         }
       }
+    },
+    {
+      "plugin": "@nx/gradle",
+      "options": {
+        "testTargetName": "test",
+        "classesTargetName": "classes",
+        "buildTargetName": "build"
+      }
     }
   ],
+  "sync": {
+    "applyChanges": true
+  },
   "analytics": false
 }

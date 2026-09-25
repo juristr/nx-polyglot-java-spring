@@ -1,4 +1,4 @@
-package com.example.shop;
+package com.example.shop.api;
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -40,10 +40,13 @@ class OpenApiSpecTest {
             .andExpect(jsonPath("$.paths['/products'].get").exists())
             .andExpect(jsonPath("$.paths['/products/{id}'].get").exists())
             .andExpect(jsonPath("$.paths['/orders'].get").exists())
-            .andExpect(jsonPath("$.components.schemas.Product.properties.id").exists())
-            .andExpect(jsonPath("$.components.schemas.Product.properties.price").exists())
-            .andExpect(jsonPath("$.components.schemas.Order.properties.products.items['$ref']")
+            .andExpect(jsonPath("$.paths['/orders/summary'].get").exists())
+            .andExpect(jsonPath("$.components.schemas.Product.required").isArray())
+            .andExpect(jsonPath("$.components.schemas.OrderLine.properties.product['$ref']")
                 .value("#/components/schemas/Product"))
+            .andExpect(jsonPath("$.components.schemas.Order.properties.lines.items['$ref']")
+                .value("#/components/schemas/OrderLine"))
+            .andExpect(jsonPath("$.components.schemas.OrderSummary").exists())
             .andExpect(jsonPath("$.servers[0].url").value("/"))
             .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         Path output = Path.of(System.getProperty("openapi.output"));

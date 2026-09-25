@@ -48,3 +48,14 @@ Thumbs.db
 .nx/polygraph
 .nx/self-healing
 .nx/migrate-runs
+# Gradle
+.gradle/
+build/
+.kotlin/
+bin/
+
+# Generated from apps/products-api/build/openapi/openapi.json by `nx codegen api-types`.
+libs/shared/api-types/src/generated/
+
+# TypeScript build info
+out-tsc

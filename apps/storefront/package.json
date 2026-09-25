@@ -1,0 +1,102 @@
+{
+  "name": "@shop/storefront",
+  "private": true,
+  "type": "module",
+  "imports": {
+    "#/*": "./src/*"
+  },
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "generate-routes": "tsr generate",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "nx": {
+    "name": "storefront",
+    "tags": [
+      "type:app",
+      "scope:web"
+    ],
+    "targets": {
+      "build": {
+        "cache": true,
+        "inputs": [
+          "production",
+          "^production",
+          {
+            "externalDependencies": [
+              "vite"
+            ]
+          }
+        ],
+        "outputs": [
+          "{projectRoot}/dist"
+        ]
+      },
+      "dev": {
+        "continuous": true,
+        "dependsOn": [
+          "...",
+          {
+            "projects": [
+              "products-api"
+            ],
+            "target": "serve"
+          }
+        ]
+      },
+      "preview": {
+        "continuous": true,
+        "dependsOn": [
+          "build",
+          {
+            "projects": [
+              "products-api"
+            ],
+            "target": "serve"
+          }
+        ]
+      },
+      "typecheck": {
+        "options": {
+          "command": "tsc -p tsconfig.typecheck.json"
+        },
+        "inputs": [
+          "default",
+          {
+            "input": "default",
+            "projects": [
+              "api-types"
+            ]
+          },
+          {
+            "dependentTasksOutputFiles": "**/*.ts",
+            "transitive": true
+          },
+          {
+            "externalDependencies": [
+              "typescript"
+            ]
+          }
+        ],
+        "outputs": []
+      }
+    }
+  },
+  "dependencies": {
+    "@shop/api-types": "workspace:*",
+    "@tanstack/react-router": "1.170.39",
+    "@tanstack/react-start": "1.168.58",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@tanstack/router-cli": "1.167.38",
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.1"
+  }
+}
