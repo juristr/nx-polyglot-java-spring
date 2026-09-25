@@ -1,0 +1,7 @@
+dte:
+  distribute-on: 2 linux-medium-polyglot
+lifecycle:
+  stop-after:
+    - build
+    - typecheck
+    - test

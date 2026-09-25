@@ -1,109 +1,124 @@
-# New Nx Repository
+# Nx polyglot: Spring Boot + TanStack Start
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A full-stack example workspace: a modular Spring Boot API (Gradle) and a TanStack Start storefront in one Nx monorepo. The storefront's TypeScript types are generated from the API's OpenAPI spec, and the Nx task graph keeps both sides in sync. Rename a field on a Java record and the storefront stops typechecking.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+![Storefront](docs/storefront.png)
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/docs/technologies/typescript/introduction?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## Layout
 
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/get-started). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
+| Path                    | Nx project     | What it is                                                                          |
+| ----------------------- | -------------- | ----------------------------------------------------------------------------------- |
+| `libs/catalog-data`     | `catalog-data` | Data layer. `Product` record and a hard-coded `ProductRepository`.                  |
+| `libs/orders`           | `orders`       | Business layer. `OrderService` prices orders from the catalog and builds a summary. |
+| `apps/products-api`     | `products-api` | Spring Boot app: `/products`, `/products/{id}`, `/orders`, `/orders/summary`.       |
+| `libs/shared/api-types` | `api-types`    | TypeScript types generated from the API's OpenAPI spec with `@hey-api/openapi-ts`.  |
+| `apps/storefront`       | `storefront`   | TanStack Start app listing products, an order summary and recent orders.            |
 
-## Generate a library
+The three Java modules are one Gradle build (`settings.gradle.kts` at the root). `@nx/gradle` turns every Gradle project into an Nx project and every Gradle task into an Nx target, with the dependencies between them. The TypeScript side is a pnpm workspace.
+
+```
+catalog-data <── orders <── products-api <·· api-types <── storefront
+                                         (implicit)
+```
+
+## Prerequisites
+
+- [mise](https://mise.jdx.dev/) for Java. `mise.toml` pins Temurin 21. Run `mise trust && mise install` once. With mise activated in your shell, `java` and `./gradlew` pick it up automatically. Otherwise prefix commands with `mise exec --`.
+- Node.js 24 and pnpm 11 (`packageManager` in `package.json`, so `corepack enable` works).
+- The Gradle wrapper (8.14.3) is committed. The first build downloads Gradle and Maven dependencies.
 
 ```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
+pnpm install
 ```
 
-## Run tasks
-
-To build the library use:
+## Commands
 
 ```sh
-npx nx run pkg1:build
+# Run the storefront (http://localhost:3000) and the Spring Boot API (http://localhost:8080)
+pnpm nx dev storefront
+
+# Typecheck everything. Builds the Java modules, emits the spec, generates types, then runs tsc.
+pnpm nx run-many -t typecheck
+
+# Build and test everything
+pnpm nx run-many -t build test
+
+# Individual steps
+pnpm nx run products-api:generateOpenApi   # writes apps/products-api/build/openapi/openapi.json
+pnpm nx codegen api-types                  # writes libs/shared/api-types/src/generated
+pnpm nx serve products-api                 # Spring Boot on :8080
+pnpm nx build storefront                   # vite build into apps/storefront/dist
+
+# Explore
+pnpm nx graph
+pnpm nx show project products-api
 ```
 
-To run any task with Nx use:
+`API_URL` overrides where the storefront's server functions reach the API (default `http://localhost:8080`).
 
-```sh
-npx nx run <project-name>:<target>
-```
+## How the type sync works
 
-These targets are either [inferred automatically](https://nx.dev/docs/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+1. **Spec at build time, no server.** `products-api:generateOpenApi` is a Gradle `Test` task in its own `openapi` source set. It boots the Spring context with a mock servlet environment, requests `/v3/api-docs` through MockMvc and writes `build/openapi/openapi.json`. No port is opened. Output is deterministic (fixed locale and timezone, sorted keys, fixed server URL and version), and Gradle's `check` depends on it, so `./gradlew build` emits the spec too. An `OpenApiCustomizer` marks every record component as required. Without it, the generated TypeScript makes every field optional.
+2. **Nx picks the task up.** `@nx/gradle` infers `generateOpenApi` as a cacheable target, including the declared `build/openapi/openapi.json` output.
+3. **Types from the spec.** `api-types` has a `codegen` script that runs `openapi-ts` on the spec. Its Nx config in `libs/shared/api-types/package.json`:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/docs/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+   ```json
+   "implicitDependencies": ["products-api"],
+   "targets": {
+     "codegen": {
+       "dependsOn": ["^generateOpenApi"],
+       "inputs": [
+         { "dependentTasksOutputFiles": "**/build/openapi/openapi.json" },
+         "{projectRoot}/package.json",
+         "sharedGlobals"
+       ],
+       "outputs": ["{projectRoot}/src/generated"],
+       "cache": true
+     }
+   }
+   ```
 
-## Versioning and releasing
+   `implicitDependencies` is the edge that makes `nx affected` see a Java change as affecting the storefront. The generated code is gitignored, so there's no import Nx could read instead. `codegen` hashes the spec file, not the Java sources, so a Java change that doesn't change the contract reuses the cached types.
 
-To version and release the library use
+4. **Consumers pull codegen in.** `nx.json` target defaults:
 
-```
-npx nx release
-```
+   ```json
+   "typecheck": {
+     "dependsOn": ["...", "codegen"],
+     "inputs": ["...", { "dependentTasksOutputFiles": "**/*.ts", "transitive": true }]
+   },
+   "build": { "dependsOn": ["...", "^codegen"] },
+   "dev":   { "dependsOn": ["...", "^codegen"] }
+   ```
 
-Pass `--dry-run` to see what would happen without actually releasing the library.
+   The storefront imports only from `@shop/api-types`. It fetches through a TanStack Start server function (`apps/storefront/src/lib/shop-api.ts`), so the browser never calls the API directly and no CORS setup is needed.
 
-[Learn more about Nx release &raquo;](https://nx.dev/docs/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Verifying it
 
-## Keep TypeScript project references up to date
+Recorded on 2026-09-25, macOS arm64, Temurin 21.0.10, Gradle 8.14.3, Nx 23.2.0.
 
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
+| Experiment                                                                     | Result                                                                                                                  |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `nx run-many -t typecheck` from a clean state                                  | Runs Java compile, `generateOpenApi`, `codegen`, then both typechecks in order. 18 tasks.                               |
+| Same command again                                                             | 18/18 from cache.                                                                                                       |
+| Delete `build/openapi/openapi.json`, run `nx run products-api:generateOpenApi` | Restored from the Nx cache.                                                                                             |
+| Rename `Product.name` to `title` in `libs/catalog-data`                        | Spec and types regenerate. `storefront:typecheck` fails: `Property 'name' does not exist on type 'Product'` (2 errors). |
+| Edit only the Javadoc on `Product`                                             | Java compile and `generateOpenApi` rerun. `codegen`, `api-types:typecheck` and `storefront:typecheck` come from cache.  |
+| `nx run-many -t build test`, three times after `./gradlew clean`               | Passes each time.                                                                                                       |
+| `nx dev storefront`                                                            | Starts Spring Boot on :8080 and Vite on :3000. Page renders products, summary and orders from the API.                  |
 
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+## CI
 
-```sh
-npx nx sync
-```
+`.github/workflows/ci.yml` runs `nx affected -t build typecheck test` with [Nx Agents](https://nx.dev/ci/features/distribute-task-execution). `.nx/ci-config.yaml` sets two `linux-medium-polyglot` agents. `.nx/workflows/agents.yaml` defines that launch template: the standard Node image plus Java from `mise.toml` and caches for the pnpm store and Gradle. The main job needs Java as well, because `@nx/gradle` asks Gradle for the project graph before anything is distributed.
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+The workspace isn't connected to Nx Cloud yet. After pushing it to GitHub, run `pnpm nx connect` to add `nxCloudId` to `nx.json`.
 
-```sh
-npx nx sync:check
-```
+## Workarounds worth knowing
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+- **`storefront:typecheck` runs `tsc -p tsconfig.typecheck.json`, not `tsc --build`.** With incremental `tsc --build`, a cache restore can leave upstream files older than the storefront's `.tsbuildinfo`, and tsc then reports the project as up to date even though the generated types changed. The non-incremental check always reads the current types. Nx caching still skips it when nothing changed.
+- **`bootJar` and `bootRun` run with `excludeDependsOn: false`** (`nx.json` target defaults). By default the `@nx/gradle` executor excludes a task's Gradle dependencies from the invocation. Spring Boot's `bootJar` reads lazy providers from `jar` and `resolveMainClassName`, so when Nx restores those from cache and excludes them, Gradle fails with "Querying the mapped value ... before task ... has completed is not supported".
+- **`nx dev storefront` starts the API through `products-api:serve`** (`apps/products-api/project.json`, `./gradlew :products-api:bootRun`) instead of the inferred `bootRun`. Nx batches Gradle tasks, and a continuous `bootRun` in the same batch as `generateOpenApi` keeps the batch from ever finishing, so `codegen` and the storefront never start.
 
-## Nx Cloud
+## Bringing in an existing Spring Boot app
 
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/docs/features/ci-features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/docs/features/ci-features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/docs/features/ci-features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/docs/features/ci-features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/docs/features/ci-features?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/docs/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## 🔗 Learn More
-
-- [Nx Documentation](https://nx.dev/docs)
-- [Crafting Your Workspace Tutorial](https://nx.dev/docs/getting-started/tutorials/crafting-your-workspace)
-- [Module Boundaries](https://nx.dev/docs/features/enforce-module-boundaries)
-- [Releasing Packages](https://nx.dev/docs/features/manage-releases)
-- [Nx Plugins](https://nx.dev/docs/concepts/nx-plugins)
-- [Nx Cloud](https://nx.dev/nx-cloud)
-
-## 💬 Community
-
-Join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+The API here started as a standalone spike and was brought in with `nx import`, which keeps its git history. The [Agentic Nx Import video](https://youtu.be/mUG292kkz0w) walks through importing a multi-module Gradle Spring Boot project into an Nx workspace.
