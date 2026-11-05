@@ -1,5 +1,5 @@
 plugins {
-    id("dev.nx.gradle.project-graph") version("0.1.25")
+    id("dev.nx.gradle.project-graph") version("0.1.26")
     id("org.springframework.boot") version "3.5.16" apply false
 }
 
