@@ -95,7 +95,7 @@ pnpm nx show project products-api
 
 ## Verifying it
 
-Recorded on 2026-09-25, macOS arm64, Temurin 21.0.10, Gradle 8.14.3, Nx 23.2.0.
+First recorded on 2026-09-25 with Nx 23.2.0. Re-run on 2026-11-05 after migrating to Nx 24.0.4, in a fresh clone with an empty cache (macOS arm64, Temurin 21.0.10, Gradle 8.14.3, pnpm 11.0.6). Every row passed both times.
 
 | Experiment                                                                     | Result                                                                                                                  |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
@@ -106,6 +106,8 @@ Recorded on 2026-09-25, macOS arm64, Temurin 21.0.10, Gradle 8.14.3, Nx 23.2.0.
 | Edit only the Javadoc on `Product`                                             | Java compile and `generateOpenApi` rerun. `codegen`, `api-types:typecheck` and `storefront:typecheck` come from cache.  |
 | `nx run-many -t build test`, three times after `./gradlew clean`               | Passes each time.                                                                                                       |
 | `nx dev storefront`                                                            | Starts Spring Boot on :8080 and Vite on :3000. Page renders products, summary and orders from the API.                  |
+| `nx run-many -t build test typecheck` with an empty cache                      | 43 tasks pass. A rerun is 43/43 from cache.                                                                             |
+| `nx affected` with a Java change, a storefront-only change, and no change      | All Java and TS projects; only `storefront`; nothing.                                                                   |
 
 ## CI
 
