@@ -111,9 +111,14 @@ First recorded on 2026-09-25 with Nx 23.2.0. Re-run on 2026-11-05 after migratin
 
 ## CI
 
-`.github/workflows/ci.yml` runs `nx affected -t build typecheck test` with [Nx Agents](https://nx.dev/ci/features/distribute-task-execution). `.nx/ci-config.yaml` sets two `linux-medium-polyglot` agents. `.nx/workflows/agents.yaml` defines that launch template: the standard Node image plus Java from `mise.toml` and caches for the pnpm store and Gradle. The main job needs Java as well, because `@nx/gradle` asks Gradle for the project graph before anything is distributed.
+CI runs on [Nx Cloud CI](https://nx.dev/docs/features/ci-features#run-ci-on-nx-cloud), not GitHub Actions. Everything is in one file, `.nx/pipelines/ci.yaml`:
 
-The workspace isn't connected to Nx Cloud yet. After pushing it to GitHub, run `pnpm nx connect` to add `nxCloudId` to `nx.json`.
+- **Triggers:** every push to `main` and every pull request. GitHub shows one status check, `Nx Cloud: CI`.
+- **Job:** `main` runs `nx sync:check`, `nx format:check` and `nx affected -t build typecheck test`. Nx Cloud sets the affected base and head SHAs itself and runs self-healing CI on failures, so there is no `nx-set-shas` or `nx fix-ci` step.
+- **Workers:** the job distributes tasks to two `linux-medium-polyglot` workers plus a worker on the main job's own machine. The workers stop once the `build`, `typecheck` and `test` tasks are done.
+- **Launch template:** `linux-medium-polyglot` is the standard Node 24 image plus Java from `mise.toml`, with caches for the pnpm store and Gradle. The main job runs on the same template. It needs Java as well, because `@nx/gradle` asks Gradle for the project graph before anything is distributed.
+
+To turn it on: push the repo to GitHub, run `pnpm nx connect` (adds `nxCloudId` to `nx.json`), install the Nx Cloud GitHub App on the repository and enable Nx Cloud CI for the workspace. If `main` has branch protection, make `Nx Cloud: CI` the required check.
 
 ## Workarounds worth knowing
 

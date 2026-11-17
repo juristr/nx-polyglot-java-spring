@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://cloud.nx.app/nx-cloud/static/schemas/workflow.schema.json
+#
+# Nx Cloud CI pipeline. Nx Cloud runs this file on every push to main and every
+# pull request; there is no GitHub Actions workflow. The status check on GitHub
+# is named "Nx Cloud: CI".
+name: CI
+
+on:
+  main-pushes:
+    event: PUSH
+    branches: [main]
+  pull-requests:
+    event: PR
+
+# Applies to the main job and to every worker.
+env:
+  CI: 'true'
+  NX_DAEMON: 'false'
+  NX_TUI: 'false'
+
+launch-templates:
+  # Node image plus Java from mise.toml, with caches for the pnpm store and
+  # Gradle. The main job runs on it as well as the workers: @nx/gradle asks
+  # Gradle for the project graph before anything is distributed, so every
+  # machine needs Java.
+  linux-medium-polyglot:
+    resource-class: 'docker_linux_amd64/medium'
+    image: 'ubuntu22.04-node24.14-v1'
+    init-steps:
+      - name: Checkout
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/checkout/main.yaml'
+
+      - name: Restore pnpm cache
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
+        inputs:
+          key: 'pnpm-lock.yaml'
+          paths: '~/.local/share/pnpm/store'
+          base-branch: 'main'
+
+      - name: Restore Gradle cache
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
+        inputs:
+          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts'
+          paths: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          base-branch: 'main'
+
+      # Installs the Java version pinned in mise.toml.
+      - name: Install Java with mise
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/install-mise/main.yaml'
+
+      - name: Install dependencies
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/install-node-modules/main.yaml'
+
+      # Downloads the Gradle distribution during init, so the first Gradle task
+      # on each machine doesn't pay for it.
+      - name: Warm up Gradle
+        script: ./gradlew --version
+
+      - name: Verify toolchains
+        script: |
+          node --version
+          pnpm --version
+          java -version
+
+worker-templates:
+  default:
+    workers: 2 linux-medium-polyglot
+    stop-after:
+      - build
+      - typecheck
+      - test
+
+jobs:
+  main:
+    name: Nx checks
+    runs-on: linux-medium-polyglot
+    workers: default
+    steps:
+      - name: Check workspace sync
+        run: pnpm exec nx sync:check
+
+      - name: Check formatting
+        run: pnpm exec nx format:check
+
+      - name: Run Nx tasks
+        run: pnpm exec nx affected -t build typecheck test
