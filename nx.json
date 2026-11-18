@@ -66,5 +66,6 @@
   "analytics": false,
   "affected": {
     "legacy": true
-  }
+  },
+  "nxCloudId": "6afd7de21c71d7ba93345e87"
 }
