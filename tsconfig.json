@@ -8,6 +8,15 @@
     },
     {
       "path": "./apps/storefront"
+    },
+    {
+      "path": "./apps/storefront-e2e"
+    },
+    {
+      "path": "./libs/storefront/products"
+    },
+    {
+      "path": "./libs/storefront/orders"
     }
   ],
   "compilerOptions": {}

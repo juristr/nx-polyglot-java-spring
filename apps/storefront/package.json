@@ -47,13 +47,17 @@
       },
       "preview": {
         "continuous": true,
+        "readyWhen": {
+          "url": "http://localhost:4173"
+        },
         "dependsOn": [
           "build",
           {
             "projects": [
               "products-api"
             ],
-            "target": "serve"
+            "target": "serve",
+            "waitFor": "ready"
           }
         ]
       },
@@ -66,7 +70,9 @@
           {
             "input": "default",
             "projects": [
-              "api-types"
+              "api-types",
+              "storefront-products",
+              "storefront-orders"
             ]
           },
           {
@@ -85,6 +91,8 @@
   },
   "dependencies": {
     "@shop/api-types": "workspace:*",
+    "@shop/storefront-orders": "workspace:*",
+    "@shop/storefront-products": "workspace:*",
     "@tanstack/react-router": "1.170.39",
     "@tanstack/react-start": "1.168.58",
     "react": "^19.2.0",

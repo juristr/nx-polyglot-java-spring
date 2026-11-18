@@ -5,7 +5,12 @@
     "serve": {
       "continuous": true,
       "command": "./gradlew :products-api:bootRun",
-      "options": { "cwd": "{workspaceRoot}" }
+      "readyWhen": {
+        "url": "http://localhost:8080/products"
+      },
+      "options": {
+        "cwd": "{workspaceRoot}"
+      }
     }
   }
 }
