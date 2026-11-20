@@ -58,6 +58,11 @@ launch-templates:
       - name: Warm up Gradle
         script: ./gradlew --version
 
+      # Browser for the storefront-e2e Playwright specs. --with-deps adds any
+      # missing system libraries through apt.
+      - name: Install Playwright Chromium
+        script: pnpm exec playwright install --with-deps chromium
+
       - name: Verify toolchains
         script: |
           node --version
@@ -71,6 +76,7 @@ worker-templates:
       - build
       - typecheck
       - test
+      - e2e-ci
 
 jobs:
   main:
@@ -85,4 +91,4 @@ jobs:
         run: pnpm exec nx format:check
 
       - name: Run Nx tasks
-        run: pnpm exec nx affected -t build typecheck test
+        run: pnpm exec nx affected -t build typecheck test e2e-ci

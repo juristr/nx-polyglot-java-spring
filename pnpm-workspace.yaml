@@ -2,6 +2,7 @@ packages:
   - 'apps/*'
   - 'libs/*'
   - 'libs/shared/*'
+  - 'libs/storefront/*'
 allowBuilds:
   '@swc/core': true
   esbuild: true

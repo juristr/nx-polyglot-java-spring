@@ -59,3 +59,5 @@ libs/shared/api-types/src/generated/
 
 # TypeScript build info
 out-tsc
+
+test-output
