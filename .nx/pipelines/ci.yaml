@@ -37,13 +37,15 @@ launch-templates:
           paths: '~/.local/share/pnpm/store'
           base-branch: 'main'
 
+      # Dependencies and compiled build scripts. Warm, this takes the first
+      # project graph from ~45s to ~10s. ~/.gradle/wrapper is left out on
+      # purpose: restoring the Gradle distribution from the cache (~5s) is
+      # slower than "Warm up Gradle" downloading it (~3.7s).
       - name: Restore Gradle cache
         uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
         inputs:
-          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts'
-          paths: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts|gradle.properties'
+          paths: '~/.gradle/caches'
           base-branch: 'main'
 
       # Installs the Java version pinned in mise.toml.
