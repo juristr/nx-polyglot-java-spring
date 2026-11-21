@@ -11,7 +11,7 @@ subprojects {
 
     plugins.withType<JavaPlugin> {
         extensions.configure<JavaPluginExtension> {
-            toolchain { languageVersion = JavaLanguageVersion.of(21) }
+            toolchain { languageVersion = JavaLanguageVersion.of(25) }
         }
         dependencies {
             "implementation"(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))

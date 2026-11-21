@@ -13,10 +13,10 @@
       "path": "./apps/storefront-e2e"
     },
     {
-      "path": "./libs/storefront/products"
+      "path": "./libs/frontend/products"
     },
     {
-      "path": "./libs/storefront/orders"
+      "path": "./libs/frontend/orders"
     }
   ],
   "compilerOptions": {}

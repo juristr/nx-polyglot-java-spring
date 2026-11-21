@@ -55,10 +55,10 @@ importers:
         version: link:../../libs/shared/api-types
       '@shop/storefront-orders':
         specifier: workspace:*
-        version: link:../../libs/storefront/orders
+        version: link:../../libs/frontend/orders
       '@shop/storefront-products':
         specifier: workspace:*
-        version: link:../../libs/storefront/products
+        version: link:../../libs/frontend/products
       '@tanstack/react-router':
         specifier: 1.170.39
         version: 1.170.39(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -96,43 +96,43 @@ importers:
 
   apps/storefront-e2e: {}
 
+  libs/frontend/orders:
+    dependencies:
+      '@shop/api-types':
+        specifier: workspace:*
+        version: link:../../shared/api-types
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.3.0
+      react:
+        specifier: ^19.2.0
+        version: 19.3.0
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
+  libs/frontend/products:
+    dependencies:
+      '@shop/api-types':
+        specifier: workspace:*
+        version: link:../../shared/api-types
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.0
+        version: 19.3.0
+      react:
+        specifier: ^19.2.0
+        version: 19.3.0
+      typescript:
+        specifier: ~6.0.3
+        version: 6.0.3
+
   libs/shared/api-types:
     devDependencies:
       '@hey-api/openapi-ts':
         specifier: 0.99.0
         version: 0.99.0(typescript@6.0.3)
-
-  libs/storefront/orders:
-    dependencies:
-      '@shop/api-types':
-        specifier: workspace:*
-        version: link:../../shared/api-types
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.0
-        version: 19.3.0
-      react:
-        specifier: ^19.2.0
-        version: 19.3.0
-      typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
-
-  libs/storefront/products:
-    dependencies:
-      '@shop/api-types':
-        specifier: workspace:*
-        version: link:../../shared/api-types
-    devDependencies:
-      '@types/react':
-        specifier: ^19.2.0
-        version: 19.3.0
-      react:
-        specifier: ^19.2.0
-        version: 19.3.0
-      typescript:
-        specifier: ~6.0.3
-        version: 6.0.3
 
 packages:
 
