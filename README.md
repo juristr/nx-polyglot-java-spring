@@ -6,16 +6,16 @@ A full-stack example workspace: a modular Spring Boot API (Gradle) and a TanStac
 
 ## Layout
 
-| Path                       | Nx project            | What it is                                                                          |
-| -------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
-| `libs/catalog-data`        | `catalog-data`        | Data layer. `Product` record and a hard-coded `ProductRepository`.                  |
-| `libs/orders`              | `orders`              | Business layer. `OrderService` prices orders from the catalog and builds a summary. |
-| `apps/products-api`        | `products-api`        | Spring Boot app: `/products`, `/products/{id}`, `/orders`, `/orders/summary`.       |
-| `libs/shared/api-types`    | `api-types`           | TypeScript types generated from the API's OpenAPI spec with `@hey-api/openapi-ts`.  |
-| `libs/storefront/products` | `storefront-products` | React components for the product list (`ProductList`, `ProductCard`).               |
-| `libs/storefront/orders`   | `storefront-orders`   | React components for orders (`OrderTable`, `OrderSummary`).                         |
-| `apps/storefront`          | `storefront`          | TanStack Start app. Its route loads the data and renders the two feature libs.      |
-| `apps/storefront-e2e`      | `storefront-e2e`      | Playwright tests against the built storefront and the running API.                  |
+| Path                        | Nx project            | What it is                                                                          |
+| --------------------------- | --------------------- | ----------------------------------------------------------------------------------- |
+| `libs/backend/catalog-data` | `catalog-data`        | Data layer. `Product` record and a hard-coded `ProductRepository`.                  |
+| `libs/backend/orders`       | `orders`              | Business layer. `OrderService` prices orders from the catalog and builds a summary. |
+| `apps/products-api`         | `products-api`        | Spring Boot app: `/products`, `/products/{id}`, `/orders`, `/orders/summary`.       |
+| `libs/shared/api-types`     | `api-types`           | TypeScript types generated from the API's OpenAPI spec with `@hey-api/openapi-ts`.  |
+| `libs/frontend/products`    | `storefront-products` | React components for the product list (`ProductList`, `ProductCard`).               |
+| `libs/frontend/orders`      | `storefront-orders`   | React components for orders (`OrderTable`, `OrderSummary`).                         |
+| `apps/storefront`           | `storefront`          | TanStack Start app. Its route loads the data and renders the two feature libs.      |
+| `apps/storefront-e2e`       | `storefront-e2e`      | Playwright tests against the built storefront and the running API.                  |
 
 The three Java modules are one Gradle build (`settings.gradle.kts` at the root). `@nx/gradle` turns every Gradle project into an Nx project and every Gradle task into an Nx target, with the dependencies between them. The TypeScript side is a pnpm workspace.
 
@@ -29,9 +29,9 @@ The two feature libs import only the generated types from `api-types`, never eac
 
 ## Prerequisites
 
-- [mise](https://mise.jdx.dev/) for Java. `mise.toml` pins Temurin 21. Run `mise trust && mise install` once. With mise activated in your shell, `java` and `./gradlew` pick it up automatically. Otherwise prefix commands with `mise exec --`.
+- [mise](https://mise.jdx.dev/) for Java. `mise.toml` pins Temurin 25. Run `mise trust && mise install` once. With mise activated in your shell, `java` and `./gradlew` pick it up automatically. Otherwise prefix commands with `mise exec --`.
 - Node.js 24 and pnpm 11 (`packageManager` in `package.json`, so `corepack enable` works).
-- The Gradle wrapper (8.14.3) is committed. The first build downloads Gradle and Maven dependencies.
+- The Gradle wrapper (9.9.1) is committed. The first build downloads Gradle and Maven dependencies.
 
 ```sh
 pnpm install
@@ -103,14 +103,14 @@ pnpm nx show project products-api
 
 ## Verifying it
 
-First recorded on 2026-09-25 with Nx 23.2.0. Re-run on 2026-11-05 after migrating to Nx 24.0.4, in a fresh clone with an empty cache (macOS arm64, Temurin 21.0.10, Gradle 8.14.3, pnpm 11.0.6). Every row passed both times.
+First recorded on 2026-09-25 with Nx 23.2.0. Re-run on 2026-11-05 after migrating to Nx 24.0.4, in a fresh clone with an empty cache (macOS arm64, Temurin 21.0.10, Gradle 8.14.3, pnpm 11.0.6). Every row passed both times. On 2026-11-19 the build moved to Temurin 25.0.5 and Gradle 9.9.1; `nx run-many -t build typecheck test e2e-ci --skip-nx-cache` passed.
 
 | Experiment                                                                     | Result                                                                                                                  |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | `nx run-many -t typecheck` from a clean state                                  | Runs Java compile, `generateOpenApi`, `codegen`, then both typechecks in order. 18 tasks.                               |
 | Same command again                                                             | 18/18 from cache.                                                                                                       |
 | Delete `build/openapi/openapi.json`, run `nx run products-api:generateOpenApi` | Restored from the Nx cache.                                                                                             |
-| Rename `Product.name` to `title` in `libs/catalog-data`                        | Spec and types regenerate. `storefront:typecheck` fails: `Property 'name' does not exist on type 'Product'` (2 errors). |
+| Rename `Product.name` to `title` in `libs/backend/catalog-data`                | Spec and types regenerate. `storefront:typecheck` fails: `Property 'name' does not exist on type 'Product'` (2 errors). |
 | Edit only the Javadoc on `Product`                                             | Java compile and `generateOpenApi` rerun. `codegen`, `api-types:typecheck` and `storefront:typecheck` come from cache.  |
 | `nx run-many -t build test`, three times after `./gradlew clean`               | Passes each time.                                                                                                       |
 | `nx dev storefront`                                                            | Starts Spring Boot on :8080 and Vite on :3000. Page renders products, summary and orders from the API.                  |
@@ -138,10 +138,10 @@ The directive replaces the spec's dependency on the whole app with the listed pr
 
 ```sh
 pnpm nx show target inputs storefront-e2e:e2e-ci--src/orders.spec.ts \
-  --check libs/storefront/orders/src/order-table.tsx libs/storefront/products/src/product-card.tsx
+  --check libs/frontend/orders/src/order-table.tsx libs/frontend/products/src/product-card.tsx
 ```
 
-A change only in `libs/storefront/orders` reruns `orders.spec.ts`, `summary.spec.ts` and `smoke.spec.ts`, and replays `products.spec.ts` from the cache.
+A change only in `libs/frontend/orders` reruns `orders.spec.ts`, `summary.spec.ts` and `smoke.spec.ts`, and replays `products.spec.ts` from the cache.
 
 On your machine, each split task also hashes every file in `storefront-e2e`, so editing one spec reruns all of them. In CI, [Ultracache](https://nx.dev/docs/features/ci-features/remote-cache#ultracache) (turned on in the Nx Cloud workspace settings) records which files each spec actually read. It then keeps only those in the hash, plus the projects listed in the directive.
 

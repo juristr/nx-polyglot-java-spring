@@ -36,10 +36,10 @@
       "path": "../../libs/shared/api-types/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/storefront/products/tsconfig.lib.json"
+      "path": "../../libs/frontend/products/tsconfig.lib.json"
     },
     {
-      "path": "../../libs/storefront/orders/tsconfig.lib.json"
+      "path": "../../libs/frontend/orders/tsconfig.lib.json"
     }
   ]
 }
