@@ -74,5 +74,6 @@
   "affected": {
     "legacy": true
   },
-  "nxCloudId": "6afd7de21c71d7ba93345e87"
+  "nxCloudId": "6b015797c8679b226f2d557f",
+  "nxCloudUrl": "https://staging.nx.app"
 }
