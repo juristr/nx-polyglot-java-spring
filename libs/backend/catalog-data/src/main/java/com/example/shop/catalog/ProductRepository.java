@@ -9,11 +9,11 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ProductRepository {
     private static final List<Product> PRODUCTS = List.of(
-        new Product(1, "Espresso Beans", "Dark roast, 1 kg bag", "Coffee", new BigDecimal("24.90"), Optional.empty()),
-        new Product(2, "Pour-Over Kettle", "Gooseneck, 1 liter", "Equipment", new BigDecimal("49.00"), Optional.empty()),
-        new Product(3, "Ceramic Dripper", "Size 02, fits standard filters", "Equipment", new BigDecimal("22.50"), Optional.empty()),
-        new Product(4, "Sencha Green Tea", "Loose leaf, 100 g", "Tea", new BigDecimal("12.80"), Optional.empty()),
-        new Product(5, "Oat Milk", "Barista edition, 1 liter", "Pantry", new BigDecimal("2.95"), Optional.empty())
+        new Product(1, "Espresso Beans", "Dark roast, 1 kg bag", "Coffee", new BigDecimal("24.90")),
+        new Product(2, "Pour-Over Kettle", "Gooseneck, 1 liter", "Equipment", new BigDecimal("49.00")),
+        new Product(3, "Ceramic Dripper", "Size 02, fits standard filters", "Equipment", new BigDecimal("22.50")),
+        new Product(4, "Sencha Green Tea", "Loose leaf, 100 g", "Tea", new BigDecimal("12.80")),
+        new Product(5, "Oat Milk", "Barista edition, 1 liter", "Pantry", new BigDecimal("2.95"))
     );
 
     public List<Product> findAll() {
