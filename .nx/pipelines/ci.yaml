@@ -37,13 +37,22 @@ launch-templates:
           paths: '~/.local/share/pnpm/store'
           base-branch: 'main'
 
+      # Two Gradle caches, because the cache step has no partial-match
+      # fallback: a changed key starts from empty. The wrapper distribution
+      # only changes with the Gradle version; dependencies and compiled build
+      # scripts change with any build file.
+      - name: Restore Gradle wrapper cache
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
+        inputs:
+          key: 'gradle/wrapper/gradle-wrapper.properties'
+          paths: '~/.gradle/wrapper'
+          base-branch: 'main'
+
       - name: Restore Gradle cache
         uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
         inputs:
-          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts'
-          paths: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts|gradle.properties'
+          paths: '~/.gradle/caches'
           base-branch: 'main'
 
       # Installs the Java version pinned in mise.toml.
