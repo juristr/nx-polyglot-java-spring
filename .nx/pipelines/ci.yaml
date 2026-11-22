@@ -66,9 +66,12 @@ launch-templates:
         parallel: true
         steps:
           # Browser for the storefront-e2e Playwright specs. --with-deps adds
-          # any missing system libraries through apt.
+          # any missing system libraries through apt. --only-shell installs
+          # just the headless shell, which is all headless Chromium needs; the
+          # full Chrome build is skipped. Drop it if a project runs headed or
+          # with channel: 'chrome'.
           - name: Install Playwright Chromium
-            script: pnpm exec playwright install --with-deps chromium
+            script: pnpm exec playwright install --with-deps --only-shell chromium
 
           # Downloads the Gradle distribution and computes the project graph.
           - name: Compute project graph
