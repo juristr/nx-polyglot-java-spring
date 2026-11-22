@@ -60,8 +60,18 @@ launch-templates:
       - name: Warm up Gradle
         script: ./gradlew --version
 
+      # Playwright browser binaries (~10s to download). Keyed on the lockfile,
+      # which pins the Playwright version and so the browser build.
+      - name: Restore Playwright browsers cache
+        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
+        inputs:
+          key: 'pnpm-lock.yaml'
+          paths: '~/.cache/ms-playwright'
+          base-branch: 'main'
+
       # Browser for the storefront-e2e Playwright specs. --with-deps adds any
-      # missing system libraries through apt.
+      # missing system libraries through apt. With the cache above, the
+      # browser download is skipped and only the apt part runs.
       - name: Install Playwright Chromium
         script: pnpm exec playwright install --with-deps chromium
 
