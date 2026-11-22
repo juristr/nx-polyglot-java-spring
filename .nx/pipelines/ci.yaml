@@ -55,15 +55,9 @@ launch-templates:
       - name: Install dependencies
         uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/install-node-modules/main.yaml'
 
-      # Playwright browser binaries (~10s to download). Keyed on the lockfile,
-      # which pins the Playwright version and so the browser build.
-      - name: Restore Playwright browsers cache
-        uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
-        inputs:
-          key: 'pnpm-lock.yaml'
-          paths: '~/.cache/ms-playwright'
-          base-branch: 'main'
-
+      # Playwright browsers are not cached on purpose: restoring them from the
+      # cache (~10s) took as long as downloading them.
+      #
       # The Playwright install (mostly apt) and the first project graph
       # (Gradle startup, ~10s warm, ~45s cold) don't depend on each other, so
       # they run side by side. Nx stores the graph in .nx/workspace-data, and
@@ -72,8 +66,7 @@ launch-templates:
         parallel: true
         steps:
           # Browser for the storefront-e2e Playwright specs. --with-deps adds
-          # any missing system libraries through apt. With the cache above,
-          # the browser download is skipped and only the apt part runs.
+          # any missing system libraries through apt.
           - name: Install Playwright Chromium
             script: pnpm exec playwright install --with-deps chromium
 
