@@ -27,6 +27,9 @@ export default defineConfig({
     cwd: workspaceRoot,
   },
   projects: [
+    // CI installs only the Chromium headless shell (--only-shell in
+    // .nx/pipelines/ci.yaml). Setting channel: 'chrome' or running headed
+    // needs the full Chrome build.
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
