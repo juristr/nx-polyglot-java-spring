@@ -37,13 +37,15 @@ launch-templates:
           paths: '~/.local/share/pnpm/store'
           base-branch: 'main'
 
+      # Dependencies and compiled build scripts. Warm, this takes the first
+      # project graph from ~45s to ~10s. ~/.gradle/wrapper is left out on
+      # purpose: restoring the Gradle distribution from the cache (~5s) is
+      # slower than "Warm up Gradle" downloading it (~3.7s).
       - name: Restore Gradle cache
         uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/cache/main.yaml'
         inputs:
-          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts'
-          paths: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
+          key: 'gradle/wrapper/gradle-wrapper.properties|**/gradle.lockfile|**/*.gradle.kts|gradle.properties'
+          paths: '~/.gradle/caches'
           base-branch: 'main'
 
       # Installs the Java version pinned in mise.toml.
@@ -53,15 +55,29 @@ launch-templates:
       - name: Install dependencies
         uses: 'nrwl/nx-cloud-workflows/v6/workflow-steps/install-node-modules/main.yaml'
 
-      # Downloads the Gradle distribution during init, so the first Gradle task
-      # on each machine doesn't pay for it.
-      - name: Warm up Gradle
-        script: ./gradlew --version
+      # Playwright browsers are not cached on purpose: restoring them from the
+      # cache (~10s) took as long as downloading them.
+      #
+      # The Playwright install (mostly apt) and the first project graph
+      # (Gradle startup, ~10s warm, ~45s cold) don't depend on each other, so
+      # they run side by side. Nx stores the graph in .nx/workspace-data, and
+      # the later nx commands reuse it.
+      - group-name: Prepare toolchains
+        parallel: true
+        steps:
+          # Browser for the storefront-e2e Playwright specs. --with-deps adds
+          # any missing system libraries through apt. --only-shell installs
+          # just the headless shell, which is all headless Chromium needs; the
+          # full Chrome build is skipped. Drop it if a project runs headed or
+          # with channel: 'chrome'.
+          - name: Install Playwright Chromium
+            script: pnpm exec playwright install --with-deps --only-shell chromium
 
-      # Browser for the storefront-e2e Playwright specs. --with-deps adds any
-      # missing system libraries through apt.
-      - name: Install Playwright Chromium
-        script: pnpm exec playwright install --with-deps chromium
+          # Downloads the Gradle distribution and computes the project graph.
+          - name: Compute project graph
+            script: |
+              ./gradlew --version
+              pnpm exec nx show projects > /dev/null
 
       - name: Verify toolchains
         script: |
